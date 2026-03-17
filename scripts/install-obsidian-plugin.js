@@ -13,6 +13,8 @@ if (!vaultPath) {
 const targetDir = path.join(vaultPath, ".obsidian", "plugins", pluginId);
 const targetAppDir = path.join(targetDir, "app");
 const sourcePluginDir = path.join(rootDir, "obsidian-plugin");
+const sharedStatePath = path.join(rootDir, "data", "shared-state.json");
+const targetDataPath = path.join(targetDir, "data.json");
 
 install().catch((error) => {
   console.error(error);
@@ -34,10 +36,38 @@ async function install() {
   const sourceHtml = await fs.promises.readFile(path.join(rootDir, "index.html"), "utf8");
   const targetHtml = injectObsidianHost(sourceHtml);
   await fs.promises.writeFile(path.join(targetAppDir, "index.html"), targetHtml, "utf8");
+  await seedPluginData();
 
   await enablePlugin(vaultPath, pluginId);
 
   console.log(`Installed ${pluginId} to ${targetDir}`);
+}
+
+async function seedPluginData() {
+  try {
+    await fs.promises.access(targetDataPath, fs.constants.F_OK);
+    return;
+  } catch (error) {
+    // Continue and seed from shared state when the plugin has no existing data file.
+  }
+
+  try {
+    const raw = await fs.promises.readFile(sharedStatePath, "utf8");
+    const parsed = JSON.parse(raw);
+    const payload = {
+      version: 1,
+      updatedAt: typeof parsed?.updatedAt === "string" ? parsed.updatedAt : null,
+      edits: parsed?.edits && typeof parsed.edits === "object" && !Array.isArray(parsed.edits) ? parsed.edits : {}
+    };
+    await fs.promises.writeFile(targetDataPath, JSON.stringify(payload, null, 2), "utf8");
+  } catch (error) {
+    const fallback = {
+      version: 1,
+      updatedAt: null,
+      edits: {}
+    };
+    await fs.promises.writeFile(targetDataPath, JSON.stringify(fallback, null, 2), "utf8");
+  }
 }
 
 async function copyFile(source, target) {
