@@ -66,3 +66,18 @@ node scripts/serve.js
 ```
 
 브라우저에서 `http://localhost:4173`을 열면 됩니다.
+
+## Obsidian에 설치하기
+
+이 프로젝트는 Obsidian 플러그인으로도 설치할 수 있습니다.
+
+```powershell
+node scripts/install-obsidian-plugin.js "C:\Users\amkjy2545\juyoung"
+```
+
+설치 위치:
+
+- `.obsidian/plugins/travel-photo-atlas`
+
+설치 후 Obsidian를 다시 열거나 `Reload app without saving`을 실행하면 플러그인이 로드됩니다.
+왼쪽 리본의 지도 아이콘이나 `Open Travel Photo Atlas` 명령으로 열 수 있습니다.

@@ -1,6 +1,7 @@
 const STORAGE_KEY = "travel-map-photo-atlas-v2";
 const SHARED_STATE_ENDPOINT = "/api/state";
 const SHARED_STATE_POLL_MS = 15000;
+const HOST_BRIDGE = window.TRAVEL_MAP_HOST || null;
 const METRO_CODES = new Set(["11", "21", "22", "23", "24", "25", "26", "29"]);
 const OBJECT_KEYS = {
   world: "countries",
@@ -1934,6 +1935,23 @@ async function hydrateEdits() {
   const cachedEdits = loadLocalEdits();
   appState.edits = cachedEdits;
 
+  if (HOST_BRIDGE?.loadEdits) {
+    try {
+      const hostState = await HOST_BRIDGE.loadEdits();
+      const hostEdits = normalizeEdits(hostState?.edits ?? hostState);
+      appState.edits = hostEdits;
+      appState.sync.remoteAvailable = true;
+      appState.sync.remoteUpdatedAt = typeof hostState?.updatedAt === "string" ? hostState.updatedAt : null;
+      persistLocalEdits();
+      return;
+    } catch (error) {
+      appState.edits = cachedEdits;
+      appState.sync.remoteAvailable = false;
+      appState.sync.remoteUpdatedAt = null;
+      console.warn("Host storage unavailable. Falling back to browser storage.", error);
+    }
+  }
+
   try {
     const sharedState = await fetchSharedState();
     const remoteEdits = normalizeEdits(sharedState.edits);
@@ -1961,6 +1979,33 @@ async function hydrateEdits() {
 async function refreshEditsFromServer(options = {}) {
   if (options.skipWhileEditing && appState.modal.open) {
     return false;
+  }
+
+  if (HOST_BRIDGE?.loadEdits) {
+    try {
+      const hostState = await HOST_BRIDGE.loadEdits();
+      const nextEdits = normalizeEdits(hostState?.edits ?? hostState);
+      const changed = hostState?.updatedAt !== appState.sync.remoteUpdatedAt
+        || JSON.stringify(nextEdits) !== JSON.stringify(appState.edits);
+
+      appState.sync.remoteAvailable = true;
+      appState.sync.remoteUpdatedAt = typeof hostState?.updatedAt === "string" ? hostState.updatedAt : null;
+
+      if (!changed) {
+        return false;
+      }
+
+      appState.edits = nextEdits;
+      persistLocalEdits();
+      if (options.renderOnChange) {
+        render();
+      }
+      return true;
+    } catch (error) {
+      appState.sync.remoteAvailable = false;
+      console.warn("Failed to refresh host state.", error);
+      return false;
+    }
   }
 
   try {
@@ -1991,6 +2036,19 @@ async function refreshEditsFromServer(options = {}) {
 
 async function persistEdits() {
   persistLocalEdits();
+
+  if (HOST_BRIDGE?.saveEdits) {
+    try {
+      const payload = await HOST_BRIDGE.saveEdits(normalizeEdits(appState.edits));
+      appState.sync.remoteAvailable = true;
+      appState.sync.remoteUpdatedAt = typeof payload?.updatedAt === "string" ? payload.updatedAt : new Date().toISOString();
+      return true;
+    } catch (error) {
+      appState.sync.remoteAvailable = false;
+      console.warn("Failed to sync host state.", error);
+      return false;
+    }
+  }
 
   try {
     const sharedState = await fetch(SHARED_STATE_ENDPOINT, {

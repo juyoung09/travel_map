@@ -1,0 +1,9 @@
+{
+  "id": "travel-photo-atlas",
+  "name": "Travel Photo Atlas",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Open the travel photo atlas inside an Obsidian view and store edits in plugin data.",
+  "author": "OpenAI Codex",
+  "isDesktopOnly": false
+}
