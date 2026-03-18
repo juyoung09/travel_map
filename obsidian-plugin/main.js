@@ -50,7 +50,7 @@ module.exports = class TravelPhotoAtlasPlugin extends Plugin {
     let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
 
     if (!leaf) {
-      leaf = this.app.workspace.getRightLeaf(false) || this.app.workspace.getLeaf(true);
+      leaf = this.app.workspace.getLeaf("tab") || this.app.workspace.getLeaf(true);
       await leaf.setViewState({
         type: VIEW_TYPE,
         active: true
