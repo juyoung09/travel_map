@@ -1,3 +1,4 @@
+const fs = require("fs");
 const { ItemView, Notice, Plugin, normalizePath } = require("obsidian");
 
 const VIEW_TYPE = "travel-photo-atlas-view";
@@ -42,20 +43,39 @@ module.exports = class TravelPhotoAtlasPlugin extends Plugin {
   }
 
   getAppUrl() {
-    const entryPath = normalizePath(`${this.getPluginDir()}/app/index.html`);
+    const entryPath = this.getAppPath("index.html");
     return this.app.vault.adapter.getResourcePath(entryPath);
   }
 
-  async activateView() {
-    let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
+  getAppPath(fileName) {
+    return normalizePath(`${this.getPluginDir()}/app/${fileName}`);
+  }
 
-    if (!leaf) {
-      leaf = this.app.workspace.getLeaf("tab") || this.app.workspace.getLeaf(true);
-      await leaf.setViewState({
-        type: VIEW_TYPE,
-        active: true
-      });
+  getAssetUrl(fileName) {
+    return this.app.vault.adapter.getResourcePath(this.getAppPath(fileName));
+  }
+
+  async buildAppDocument() {
+    const html = await fs.promises.readFile(this.getAppPath("index.html"), "utf8");
+
+    return html
+      .replace(/href="styles\.css\?v=[^"]+"/, `href="${this.getAssetUrl("styles.css")}"`)
+      .replace(/src="obsidian-host\.js"/, `src="${this.getAssetUrl("obsidian-host.js")}"`)
+      .replace(/src="map-data\.js\?v=[^"]+"/, `src="${this.getAssetUrl("map-data.js")}"`)
+      .replace(/src="app\.js\?v=[^"]+"/, `src="${this.getAssetUrl("app.js")}"`);
+  }
+
+  async activateView() {
+    const existingLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+    for (const existingLeaf of existingLeaves) {
+      existingLeaf.detach();
     }
+
+    const leaf = this.app.workspace.getLeaf("tab") || this.app.workspace.getLeaf(true);
+    await leaf.setViewState({
+      type: VIEW_TYPE,
+      active: true
+    });
 
     this.app.workspace.revealLeaf(leaf);
   }
@@ -152,8 +172,14 @@ class TravelPhotoAtlasView extends ItemView {
     const frame = this.contentEl.createEl("iframe", {
       cls: "travel-photo-atlas-frame"
     });
-    frame.src = this.plugin.getAppUrl();
     frame.setAttribute("allow", "clipboard-write");
+
+    try {
+      frame.srcdoc = await this.plugin.buildAppDocument();
+    } catch (error) {
+      frame.src = this.plugin.getAppUrl();
+      new Notice("Travel Photo Atlas assets could not be embedded. Falling back to direct load.");
+    }
   }
 
   async onClose() {
