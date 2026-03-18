@@ -1,4 +1,3 @@
-const fs = require("fs");
 const { ItemView, Notice, Plugin, normalizePath } = require("obsidian");
 
 const VIEW_TYPE = "travel-photo-atlas-view";
@@ -56,7 +55,7 @@ module.exports = class TravelPhotoAtlasPlugin extends Plugin {
   }
 
   async buildAppDocument() {
-    const html = await fs.promises.readFile(this.getAppPath("index.html"), "utf8");
+    const html = await this.app.vault.adapter.read(this.getAppPath("index.html"));
 
     return html
       .replace(/href="styles\.css\?v=[^"]+"/, `href="${this.getAssetUrl("styles.css")}"`)
