@@ -55,11 +55,16 @@ module.exports = class TravelPhotoAtlasPlugin extends Plugin {
   }
 
   async buildAppDocument() {
-    const html = await this.app.vault.adapter.read(this.getAppPath("index.html"));
+    const [html, styles, hostBridge] = await Promise.all([
+      this.app.vault.adapter.read(this.getAppPath("index.html")),
+      this.app.vault.adapter.read(this.getAppPath("styles.css")),
+      this.app.vault.adapter.read(this.getAppPath("obsidian-host.js"))
+    ]);
 
     return html
-      .replace(/href="styles\.css\?v=[^"]+"/, `href="${this.getAssetUrl("styles.css")}"`)
-      .replace(/src="obsidian-host\.js"/, `src="${this.getAssetUrl("obsidian-host.js")}"`)
+      .replace("<body>", '<body class="obsidian-embed">')
+      .replace(/<link rel="stylesheet" href="styles\.css\?v=[^"]+" \/>/, `<style>\n${styles}\n</style>`)
+      .replace(/<script src="obsidian-host\.js"><\/script>/, `<script>\n${escapeInlineScript(hostBridge)}\n</script>`)
       .replace(/src="map-data\.js\?v=[^"]+"/, `src="${this.getAssetUrl("map-data.js")}"`)
       .replace(/src="app\.js\?v=[^"]+"/, `src="${this.getAssetUrl("app.js")}"`);
   }
@@ -204,4 +209,8 @@ function normalizeState(value) {
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function escapeInlineScript(value) {
+  return String(value).replace(/<\/script>/gi, "<\\/script>");
 }

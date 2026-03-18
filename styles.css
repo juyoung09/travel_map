@@ -36,6 +36,13 @@ body {
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 }
 
+body.obsidian-embed {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.94), transparent 32%),
+    linear-gradient(180deg, #f6f0e5, #e5edf5);
+}
+
 button,
 input,
 label {
@@ -52,6 +59,11 @@ button {
   padding: 28px 0 40px;
 }
 
+body.obsidian-embed .app-shell {
+  width: min(100%, calc(100vw - 28px));
+  padding: 18px 0 28px;
+}
+
 .hero {
   padding: 28px;
   border: 1px solid var(--border);
@@ -61,6 +73,10 @@ button {
     linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.65));
   box-shadow: var(--shadow);
   backdrop-filter: blur(20px);
+}
+
+body.obsidian-embed .hero {
+  padding: 22px;
 }
 
 .hero-copy {
@@ -141,6 +157,10 @@ button {
   flex-wrap: wrap;
 }
 
+body.obsidian-embed .view-tabs {
+  gap: 10px;
+}
+
 .view-tab {
   display: inline-flex;
   align-items: center;
@@ -154,6 +174,11 @@ button {
     transform 160ms ease,
     border-color 160ms ease,
     background 160ms ease;
+}
+
+body.obsidian-embed .view-tab {
+  gap: 10px;
+  padding: 10px 14px;
 }
 
 .view-tab:hover,
@@ -183,10 +208,20 @@ button {
   font-size: 1.1rem;
 }
 
+body.obsidian-embed .tab-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 1rem;
+}
+
 .toolbar-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+body.obsidian-embed .toolbar-actions {
+  gap: 8px;
 }
 
 .ghost-button,
